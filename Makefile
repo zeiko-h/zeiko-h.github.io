@@ -1,5 +1,5 @@
 MD_DIR := src
-OUTPUT_DIR := public
+OUTPUT_DIR := docs
 MD_FILES := $(wildcard $(MD_DIR)/*.md)
 HTML_FILES := $(wildcard $(OUTPUT_DIR)/*.html)
 
