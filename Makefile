@@ -10,7 +10,8 @@ markdown: $(MD_FILES)
 		FILENAME=$${BASENAME%.md};\
 		OUTPUTNAME=$(OUTPUT_DIR)/$${FILENAME}.html;\
 		mkdir -p $${OUTPUTNAME%/*};\
-		pandoc $$f -f markdown -t html -s -o $${OUTPUTNAME};\
+		pandoc $$f -f markdown -t html -s --template=templates/custom.html -o $${OUTPUTNAME};\
+		echo pandoc $$f -f markdown -t html -s --template=templates/custom.html -o $${OUTPUTNAME};\
 	done
 
 echo: $(MD_FILES)
