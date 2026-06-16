@@ -1,0 +1,26 @@
+MD_DIR := src
+OUTPUT_DIR := public
+MD_FILES := $(wildcard $(MD_DIR)/*.md)
+HTML_FILES := $(wildcard $(OUTPUT_DIR)/*.html)
+
+markdown: $(MD_FILES)
+	@for f in $^; do\
+		BASENAME="$${f##*/}";\
+		FILENAME=$${BASENAME%.md};\
+		OUTPUTNAME=$(OUTPUT_DIR)/$${FILENAME}.html;\
+		echo $$BASENAME;\
+		echo $$FILENAME;\
+		echo $$OUTPUTNAME;\
+		pandoc $$f -f markdown -t html -s -o $${OUTPUTNAME};\
+	done
+
+clean: 
+	echo $(HTML_FILES)
+	rm -rf $(HTML_FILES)
+
+print: $(wildcard *.md)
+	ls -la $?
+
+hello:
+	echo "Hello, world!"
+
