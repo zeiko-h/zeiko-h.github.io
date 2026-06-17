@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="generator" content="pandoc" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+                        <meta name="dcterms.date" content="2026-06-17" />
+                                <title>Writing an Entity Component System from scratch in Zig</title>
+        <style>
+            code{white-space: pre-wrap;}
+            span.smallcaps{font-variant: small-caps;}
+            div.columns{display: flex; gap: min(4vw, 1.5em);}
+            div.column{flex: auto; overflow-x: auto;}
+            div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+            /* The extra [class] is a hack that increases specificity enough to
+               override a similar rule in reveal.js */
+            ul.task-list[class]{list-style: none;}
+            ul.task-list li input[type="checkbox"] {
+              font-size: inherit;
+              width: 0.8em;
+              margin: 0 0.8em 0.2em -1.6em;
+              vertical-align: middle;
+            }
+            .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+            /* CSS for syntax highlighting */
+            html { -webkit-text-size-adjust: 100%; }
+            pre > code.sourceCode { white-space: pre; position: relative; }
+            pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+            pre > code.sourceCode > span:empty { height: 1.2em; }
+            .sourceCode { overflow: visible; }
+            code.sourceCode > span { color: inherit; text-decoration: inherit; }
+            div.sourceCode { margin: 1em 0; }
+            pre.sourceCode { margin: 0; }
+            @media screen {
+            div.sourceCode { overflow: auto; }
+            }
+            @media print {
+            pre > code.sourceCode { white-space: pre-wrap; }
+            pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+            }
+            pre.numberSource code
+              { counter-reset: source-line 0; }
+            pre.numberSource code > span
+              { position: relative; left: -4em; counter-increment: source-line; }
+            pre.numberSource code > span > a:first-child::before
+              { content: counter(source-line);
+                position: relative; left: -1em; text-align: right; vertical-align: baseline;
+                border: none; display: inline-block;
+                -webkit-touch-callout: none; -webkit-user-select: none;
+                -khtml-user-select: none; -moz-user-select: none;
+                -ms-user-select: none; user-select: none;
+                padding: 0 4px; width: 4em;
+                background-color: #232629;
+                color: #7a7c7d;
+              }
+            pre.numberSource { margin-left: 3em; border-left: 1px solid #7a7c7d;  padding-left: 4px; }
+            div.sourceCode
+              { color: #cfcfc2; background-color: #232629; }
+            @media screen {
+            pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+            }
+            code span { color: #cfcfc2; } /* Normal */
+            code span.al { color: #95da4c; background-color: #4d1f24; font-weight: bold; } /* Alert */
+            code span.an { color: #3f8058; } /* Annotation */
+            code span.at { color: #2980b9; } /* Attribute */
+            code span.bn { color: #f67400; } /* BaseN */
+            code span.bu { color: #7f8c8d; } /* BuiltIn */
+            code span.cf { color: #fdbc4b; font-weight: bold; } /* ControlFlow */
+            code span.ch { color: #3daee9; } /* Char */
+            code span.cn { color: #27aeae; font-weight: bold; } /* Constant */
+            code span.co { color: #7a7c7d; } /* Comment */
+            code span.cv { color: #7f8c8d; } /* CommentVar */
+            code span.do { color: #a43340; } /* Documentation */
+            code span.dt { color: #2980b9; } /* DataType */
+            code span.dv { color: #f67400; } /* DecVal */
+            code span.er { color: #da4453; text-decoration: underline; } /* Error */
+            code span.ex { color: #0099ff; font-weight: bold; } /* Extension */
+            code span.fl { color: #f67400; } /* Float */
+            code span.fu { color: #8e44ad; } /* Function */
+            code span.im { color: #27ae60; } /* Import */
+            code span.in { color: #c45b00; } /* Information */
+            code span.kw { color: #cfcfc2; font-weight: bold; } /* Keyword */
+            code span.op { color: #cfcfc2; } /* Operator */
+            code span.ot { color: #27ae60; } /* Other */
+            code span.pp { color: #27ae60; } /* Preprocessor */
+            code span.re { color: #2980b9; background-color: #153042; } /* RegionMarker */
+            code span.sc { color: #3daee9; } /* SpecialChar */
+            code span.ss { color: #da4453; } /* SpecialString */
+            code span.st { color: #f44f4f; } /* String */
+            code span.va { color: #27aeae; } /* Variable */
+            code span.vs { color: #da4453; } /* VerbatimString */
+            code span.wa { color: #da4453; } /* Warning */
+        </style>
+                <link rel="stylesheet" href="/styles.css" />
+                            </head>
+    <body>
+        <header id="page-header">
+            <div class="logo">[zeiko]</div>
+            <nav class="menu" id="TOC" role="doc-toc">
+                <a href="/index.html">/home/</a>
+                <a href="/blog/index.html">/blog/</a>
+                <a href="/about.html">/about/</a>
+            </nav>
+        </header>
+        <hr>
+
+        <div class="page-title">
+                        <h1 class="title">Writing an Entity Component
+System from scratch in Zig</h1>
+                                    <p class="date">Written on 2026-06-17</p>
+                    </div>
+
+        <p>Hello, this post will talk about an entity component
+        system.</p>
+        <h2 id="what-is-an-ecs">What is an ECS?</h2>
+        <p>An entity component system is a way to design a program,
+        commonly used in game development. This design focuses on
+        separation of an ‘entity’ and its associated data ‘components’.
+        Generally, the entity is a unique id, and for every component
+        type there is an array of that type. This allows you to iterate
+        over components rather than objects, which as discussed in the
+        famous data oriented design talk, is good for cpu stuff and
+        makes your program more performant.</p>
+        <p>Catherine West’s <a
+        href="https://www.youtube.com/watch?v=aKLntZcp27M">RustConf ECS
+        talk</a> is a great primer on ECS.</p>
+        <p>Here is an example of doing a game in an OOP like
+        fashion:</p>
+        <div class="sourceCode" id="cb1"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> std <span class="op">=</span> <span class="bu">@import</span>(<span class="st">&quot;std&quot;</span>);</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> Pos <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    x<span class="op">:</span> <span class="dt">i32</span><span class="op">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    y<span class="op">:</span> <span class="dt">i32</span><span class="op">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> Player <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    pos<span class="op">:</span> Pos <span class="op">=</span> <span class="op">.</span>{ <span class="op">.</span>x <span class="op">=</span> <span class="dv">10</span><span class="op">,</span> <span class="op">.</span>y <span class="op">=</span> <span class="dv">10</span> }<span class="op">,</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    hp<span class="op">:</span> <span class="dt">i32</span> <span class="op">=</span> <span class="dv">10</span><span class="op">,</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    renderable<span class="op">:</span> Renderable <span class="op">=</span> Renderable{}<span class="op">,</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> handle_input(<span class="va">self</span><span class="op">:</span> <span class="op">*</span>Player) <span class="dt">void</span> {</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        _ <span class="op">=</span> <span class="va">self</span>;</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> Monster <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    pos<span class="op">:</span> Pos <span class="op">=</span> <span class="op">.</span>{ <span class="op">.</span>x <span class="op">=</span> <span class="dv">0</span><span class="op">,</span> <span class="op">.</span>y <span class="op">=</span> <span class="dv">0</span> }<span class="op">,</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    hp<span class="op">:</span> <span class="dt">i32</span> <span class="op">=</span> <span class="dv">5</span><span class="op">,</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    sound<span class="op">:</span> []<span class="at">const</span> <span class="dt">u8</span> <span class="op">=</span> <span class="st">&quot;ROAR!!!</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    ai<span class="op">:</span> Ai <span class="op">=</span> Ai{}<span class="op">,</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    renderable<span class="op">:</span> Renderable <span class="op">=</span> Renderable{}<span class="op">,</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> Ai <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="co">// pretend to do ai</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> do_ai(<span class="va">self</span><span class="op">:</span> <span class="op">*</span><span class="at">const</span> Ai) <span class="dt">void</span> {</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        _ <span class="op">=</span> <span class="va">self</span>;</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        std<span class="op">.</span>debug<span class="op">.</span>print(<span class="st">&quot;Doing ai</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> Renderable <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    <span class="co">// pretend to render</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> <span class="kw">fn</span> render(<span class="va">self</span><span class="op">:</span> <span class="op">*</span><span class="at">const</span> Renderable) <span class="dt">void</span> {</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>        _ <span class="op">=</span> <span class="va">self</span>;</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>        std<span class="op">.</span>debug<span class="op">.</span>print(<span class="st">&quot;Rendering...</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() <span class="op">!</span><span class="dt">void</span> {</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">var</span> player<span class="op">:</span> Player <span class="op">=</span> <span class="op">.</span>{};</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> monster_list <span class="op">=</span> [_]Monster{ Monster{}<span class="op">,</span> Monster{} };</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>    player<span class="op">.</span>handle_input();</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (monster_list) <span class="op">|</span>monster<span class="op">|</span> {</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>        monster<span class="op">.</span>ai<span class="op">.</span>do_ai();</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (monster_list) <span class="op">|</span>monster<span class="op">|</span> {</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>        monster<span class="op">.</span>renderable<span class="op">.</span>render();</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>        player<span class="op">.</span>renderable<span class="op">.</span>render();</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+        <p>If you can imagine continuing to build a game, adding more
+        systems and members to each ‘class’, eventually you might wind
+        up with some really large classes with many fields, or some sort
+        of inheritance which can make it difficult to share code.
+        Overall I think the deficiencies of OOP in game development have
+        been stated plenty, the advice I hear today is to favour
+        composition over inheritance.</p>
+        <p>Lets see what that would look like, following this style:</p>
+        <div class="sourceCode" id="cb2"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> std <span class="op">=</span> <span class="bu">@import</span>(<span class="st">&quot;std&quot;</span>);</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> PositionComponent <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    x<span class="op">:</span> <span class="dt">i32</span> <span class="op">=</span> <span class="dv">0</span><span class="op">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    y<span class="op">:</span> <span class="dt">i32</span> <span class="op">=</span> <span class="dv">0</span><span class="op">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> HpComponent <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    health<span class="op">:</span> <span class="dt">i32</span> <span class="op">=</span> <span class="dv">10</span><span class="op">,</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> RenderableComponent <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    glyph<span class="op">:</span> <span class="dt">u8</span> <span class="op">=</span> <span class="ch">&#39;@&#39;</span><span class="op">,</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> AiComponent <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    something<span class="op">:</span> <span class="dt">u8</span> <span class="op">=</span> <span class="ch">&#39; &#39;</span><span class="op">,</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> Entity <span class="op">=</span> <span class="kw">struct</span> {</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    position<span class="op">:</span> PositionComponent <span class="op">=</span> <span class="op">.</span>{}<span class="op">,</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    hp<span class="op">:</span> HpComponent <span class="op">=</span> <span class="op">.</span>{}<span class="op">,</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    renderable<span class="op">:</span> RenderableComponent <span class="op">=</span> <span class="op">.</span>{}<span class="op">,</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    ai<span class="op">:</span> AiComponent <span class="op">=</span> <span class="op">.</span>{}<span class="op">,</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> do_ai(entity<span class="op">:</span> <span class="op">*</span>Entity) <span class="dt">void</span>{</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    _ <span class="op">=</span> entity;</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    std<span class="op">.</span>debug<span class="op">.</span>print(<span class="st">&quot;ai...</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> render(entity<span class="op">:</span> <span class="op">*</span>Entity) <span class="dt">void</span>{</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    _ <span class="op">=</span> entity;</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    std<span class="op">.</span>debug<span class="op">.</span>print(<span class="st">&quot;rendering...</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> handle_input(entity<span class="op">:</span> <span class="op">*</span>Entity) <span class="dt">void</span>{</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    entity<span class="op">.</span>position<span class="op">.</span>x <span class="op">=</span> entity<span class="op">.</span>position<span class="op">.</span>x <span class="op">+</span> <span class="dv">1</span>;</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    std<span class="op">.</span>debug<span class="op">.</span>print(<span class="st">&quot;input...</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() <span class="op">!</span><span class="dt">void</span> {</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">var</span> player<span class="op">:</span> Entity <span class="op">=</span> <span class="op">.</span>{};</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">var</span> entity_list<span class="op">=</span> [_]Entity{<span class="op">.</span>{}} <span class="op">**</span> <span class="dv">5</span>;</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>    entity_list[<span class="dv">0</span>] <span class="op">=</span> Entity{};</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    handle_input(<span class="op">&amp;</span>player);</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="op">&amp;</span>entity_list) <span class="op">|*</span>entity<span class="op">|</span> {</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>        do_ai(entity);</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="op">&amp;</span>entity_list) <span class="op">|*</span>entity<span class="op">|</span> {</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>        render(entity);</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+        <p>I feel like this style is better, it separates the data
+        (components) from the systems (functions to act on data).</p>
+        <p>Again though, you can imagine having more and more components
+        and systems, and having a very large class which holds a bunch
+        of optional components. I guess this is fine, people make games
+        like this (even in the OOP style - yuck), I have heard of these
+        paradigms as <a href="">Arrays of Structs and Structs of
+        Arrays</a>. Our example is clearly an array of structs, and I
+        don’t think there is a compelling reason to leave it that
+        way.</p>
+        <p>Let’s see what a struct of arrays (of components) would look
+        like:</p>
+        <p>The above example has several problems</p>
+        <ul>
+        <li>Code duplication (inheritance vs composition)</li>
+        <li>Consistent cache misses (data oriented design)</li>
+        </ul>
+        <p>These problems can be mitigated, and I have really enjoyed
+        Bob Nystrom’s talk, and Game Programming Patterns book on using
+        the good parts of OOP.</p>
+        <p>To give a quick example of how an ECS would be used (for
+        context’s sake):</p>
+        <div class="sourceCode" id="cb3"><pre
+        class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>Component position<span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> x<span class="op">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> y<span class="op">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>Component graphic<span class="op">{</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    Texture texture<span class="op">;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span><span class="op">(</span><span class="kw">true</span><span class="op">){</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    player<span class="op">-&gt;</span>do_action<span class="op">();</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> <span class="op">(</span><span class="at">const</span> <span class="kw">auto</span> graphic <span class="op">:</span> GraphicComponentList<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        graphic<span class="op">-&gt;</span>render<span class="op">();</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> <span class="op">(</span><span class="at">const</span> <span class="kw">auto</span> ai <span class="op">:</span> AiComponentList<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        ai<span class="op">-&gt;</span>do_ai<span class="op">();</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+        <p>You can do some pretty interesting thing using an ECS, see
+        cient’s youtube series on making an ecs from scratch.</p>
+        <p>To reiterate, the advantages of ECS is the separation of
+        entities and components. This allows for both more performant
+        programs by iterating over arrays of components rather than
+        objects, and promotes code reuse because data is separated from
+        the object it belongs to.</p>
+        <h2 id="why-write-it-from-scratch-and-in-zig">Why write it from
+        scratch (and in Zig)?</h2>
+        <p>I think Zig is a sick language with cool new ideas, and it’s
+        different from what I usually use.</p>
+        <p>There are ECS implementations which exist and are used, but I
+        thought it an interesting programming exercise because: - it
+        involves a user facing functionality - it uses simlar data
+        structures (fun!) - it’s easy to improve (in terms of both
+        interface, and efficiency)</p>
+        <h2 id="the-implementation">The implementation</h2>
+        <p>Lets jump right into it!</p>
+        <div class="sourceCode" id="cb4"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init<span class="op">:</span> std<span class="op">.</span>process<span class="op">.</span>Init) <span class="op">!</span><span class="dt">void</span> {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Prints to stderr, unbuffered, ignoring potential errors.</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    std<span class="op">.</span>debug<span class="op">.</span>print(<span class="st">&quot;All your {s} are belong to us.</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{<span class="st">&quot;codebase&quot;</span>});</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// This is appropriate for anything that lives as long as the process.</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> arena<span class="op">:</span> std<span class="op">.</span>mem<span class="op">.</span>Allocator <span class="op">=</span> init<span class="op">.</span>arena<span class="op">.</span>allocator();</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Accessing command line arguments:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> args <span class="op">=</span> <span class="cf">try</span> init<span class="op">.</span>minimal<span class="op">.</span>args<span class="op">.</span>toSlice(arena);</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (args) <span class="op">|</span>arg<span class="op">|</span> {</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        std<span class="op">.</span>log<span class="op">.</span>info(<span class="st">&quot;arg: {s}&quot;</span><span class="op">,</span> <span class="op">.</span>{arg});</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">// In order to do I/O operations need an `Io` instance.</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> io <span class="op">=</span> init<span class="op">.</span>io;</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Stdout is for the actual output of your application, for example if you</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">// are implementing gzip, then only the compressed bytes should be sent to</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">// stdout, not any debugging messages.</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">var</span> stdout_buffer<span class="op">:</span> [<span class="dv">1024</span>]<span class="dt">u8</span> <span class="op">=</span> <span class="cn">undefined</span>;</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">var</span> stdout_file_writer<span class="op">:</span> Io<span class="op">.</span>File<span class="op">.</span>Writer <span class="op">=</span> <span class="op">.</span>init(<span class="op">.</span>stdout()<span class="op">,</span> io<span class="op">,</span> <span class="op">&amp;</span>stdout_buffer);</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> stdout_writer <span class="op">=</span> <span class="op">&amp;</span>stdout_file_writer<span class="op">.</span>interface;</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> stdout_writer<span class="op">.</span>flush(); <span class="co">// Don&#39;t forget to flush!</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+        <p>Like I mentioned before we are going to</p>
+        <p>From a user functionality standpoint we want to be able to: -
+        create entities - create component types - create component for
+        an entity - iterate over component lists</p>
+        <p>So just to sketch out the shape of what we want to make: -
+        some container for array of a ComponentType - some container for
+        array of array of ComponentType (we want a list of all our
+        registered component types) - some way to map entities to their
+        components</p>
+    </body>
+</html>

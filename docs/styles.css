@@ -1,0 +1,61 @@
+
+
+/* Should probably support light and dark mode
+ * if youre here just change the html class,
+ * should be fine 
+*/
+html {
+    background: #111;
+    /*background: #FFF;*/
+    color: #c8c8c8;
+    /*color: #111;*/
+    font: 1rem serif;
+}
+
+body {
+    margin: 0 auto;
+    max-width: 75ch;   
+    width: 100%;
+    justify-content: center;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    border-top: 1px solid #FFFFFF;
+}
+
+a {
+    color: orange;
+}
+
+pre.sourceCode {
+    overflow-x: auto;
+    border-radius: 1px;
+    border: 1px solid #FFF;
+    padding: 5px;
+}
+
+#page-header {
+    font: 2em monospace;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.page-title {
+    border-bottom: 2px dashed white;
+}
+
+.title {
+    font: bold 1.5rem monospace;
+}
+
+.date {
+    font: italic 1rem monospace;
+}
+
+h2, h3, h4, h5 {
+    font: 1.2em monospace;
+    border-bottom: 1px solid orange;
+}
