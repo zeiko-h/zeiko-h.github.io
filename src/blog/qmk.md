@@ -8,7 +8,7 @@ to someone like me who uses computers a lot.
 Usually I only pick it up once or twice a year,
 which is very annoying because I need to relearn how to flash it every time I want to use it again.
 
-So future me, and to anyone else, I hope this helps you, this is really only a 5 minute job.
+So for future me, this is really only a 5 minute job.
 
 ## Step 0: Obtain a keymap
 Get a keymap from qmk configurator or edit a keymap.c, or anywhere else.

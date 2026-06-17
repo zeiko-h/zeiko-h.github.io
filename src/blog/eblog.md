@@ -27,3 +27,8 @@ So as the post mentions this involes the following (I'll stop quoting the post a
     2. match: print and exit 0 (ok)
 
 4. exit 1 (error)
+
+# TODO
+- Copy zig mains into code blocks
+- Decide how much gonna copy over
+- Zigisms? IO passing? which version?

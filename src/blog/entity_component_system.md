@@ -249,3 +249,6 @@ So just to sketch out the shape of what we want to make:
 - some container for array of array of ComponentType (we want a list of all our registered component types)
 - some way to map entities to their components
 
+## TODO
+- Think about this more
+- Probably create a cohesive example

@@ -1,4 +1,5 @@
 ## 2026
+- [Writing | My first post](first_post.html)
 
 ## WIP
 - [Following eblog.fly](eblog.html)
