@@ -22,6 +22,74 @@
               vertical-align: middle;
             }
             .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+            /* CSS for syntax highlighting */
+            html { -webkit-text-size-adjust: 100%; }
+            pre > code.sourceCode { white-space: pre; position: relative; }
+            pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+            pre > code.sourceCode > span:empty { height: 1.2em; }
+            .sourceCode { overflow: visible; }
+            code.sourceCode > span { color: inherit; text-decoration: inherit; }
+            div.sourceCode { margin: 1em 0; }
+            pre.sourceCode { margin: 0; }
+            @media screen {
+            div.sourceCode { overflow: auto; }
+            }
+            @media print {
+            pre > code.sourceCode { white-space: pre-wrap; }
+            pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+            }
+            pre.numberSource code
+              { counter-reset: source-line 0; }
+            pre.numberSource code > span
+              { position: relative; left: -4em; counter-increment: source-line; }
+            pre.numberSource code > span > a:first-child::before
+              { content: counter(source-line);
+                position: relative; left: -1em; text-align: right; vertical-align: baseline;
+                border: none; display: inline-block;
+                -webkit-touch-callout: none; -webkit-user-select: none;
+                -khtml-user-select: none; -moz-user-select: none;
+                -ms-user-select: none; user-select: none;
+                padding: 0 4px; width: 4em;
+                background-color: #232629;
+                color: #7a7c7d;
+              }
+            pre.numberSource { margin-left: 3em; border-left: 1px solid #7a7c7d;  padding-left: 4px; }
+            div.sourceCode
+              { color: #cfcfc2; background-color: #232629; }
+            @media screen {
+            pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+            }
+            code span { color: #cfcfc2; } /* Normal */
+            code span.al { color: #95da4c; background-color: #4d1f24; font-weight: bold; } /* Alert */
+            code span.an { color: #3f8058; } /* Annotation */
+            code span.at { color: #2980b9; } /* Attribute */
+            code span.bn { color: #f67400; } /* BaseN */
+            code span.bu { color: #7f8c8d; } /* BuiltIn */
+            code span.cf { color: #fdbc4b; font-weight: bold; } /* ControlFlow */
+            code span.ch { color: #3daee9; } /* Char */
+            code span.cn { color: #27aeae; font-weight: bold; } /* Constant */
+            code span.co { color: #7a7c7d; } /* Comment */
+            code span.cv { color: #7f8c8d; } /* CommentVar */
+            code span.do { color: #a43340; } /* Documentation */
+            code span.dt { color: #2980b9; } /* DataType */
+            code span.dv { color: #f67400; } /* DecVal */
+            code span.er { color: #da4453; text-decoration: underline; } /* Error */
+            code span.ex { color: #0099ff; font-weight: bold; } /* Extension */
+            code span.fl { color: #f67400; } /* Float */
+            code span.fu { color: #8e44ad; } /* Function */
+            code span.im { color: #27ae60; } /* Import */
+            code span.in { color: #c45b00; } /* Information */
+            code span.kw { color: #cfcfc2; font-weight: bold; } /* Keyword */
+            code span.op { color: #cfcfc2; } /* Operator */
+            code span.ot { color: #27ae60; } /* Other */
+            code span.pp { color: #27ae60; } /* Preprocessor */
+            code span.re { color: #2980b9; background-color: #153042; } /* RegionMarker */
+            code span.sc { color: #3daee9; } /* SpecialChar */
+            code span.ss { color: #da4453; } /* SpecialString */
+            code span.st { color: #f44f4f; } /* String */
+            code span.va { color: #27aeae; } /* Variable */
+            code span.vs { color: #da4453; } /* VerbatimString */
+            code span.wa { color: #da4453; } /* Warning */
         </style>
                 <link rel="stylesheet" href="/styles.css" />
                             </head>
@@ -49,36 +117,221 @@
         and I thought doing it would be fun. The series uses Go to write
         several systems-programmy programs, but I am not (at the moment)
         very interested in Go. Instead, because I am one of those
-        people, let’s do it in zig.</p>
-        <h2
-        id="programmer-programs-programmers-write-programs">Programmer
-        programs ‘Programmers write programs’</h2>
-        <p>The first program to get my hands dirty with is
-        <code>findoffset</code> which, according to the blog post, does
-        the following:</p>
-        <blockquote>
-        <p>findoffset.go is a command line tool that finds the offset of
-        the first occurrence of a string in a file and prints it to
-        stdout.</p>
-        </blockquote>
-        <p>So as the post mentions this involes the following (I’ll stop
-        quoting the post after this, I swear):</p>
-        <ol type="1">
-        <li><p>parse the command line arguments</p></li>
-        <li><p>read the file into memory</p></li>
-        <li><p>compare the bytes in the file to the bytes in the string,
-        one-by-one</p>
-        <ol type="1">
-        <li>no match: continue at next offset</li>
-        <li>match: print and exit 0 (ok)</li>
-        </ol></li>
-        <li><p>exit 1 (error)</p></li>
-        </ol>
-        <h1 id="todo">TODO</h1>
+        people, let’s do it in zig 0.16.</p>
+        <p>Before we start, I won’t paste the contents of every activity
+        here because that would be pretty hard to read. I will write my
+        thoughts about each program, and any reflections I had along the
+        way, supported by a minimal code example.</p>
+        <h2 id="findoffset">findoffset</h2>
+        <p>Quite a simple program. The most interesting part here was
+        how to match the search string, but I used the same method as in
+        the blog post. I did some reading sometime this week and saw how
+        ripgrep is faster than grep because it doesn’t compare every
+        byte, I think it would be fun to do some basic optimisation in a
+        similar vein here, like skipping N bytes when nothing matches
+        the pattern.</p>
+        <p>Because I am writing this after the fact, I think I could
+        have had some nicer argument handling and I should have used a
+        writer.</p>
+        <h2 id="echo">echo</h2>
+        <p>I noticed when I came back to this program I looped over my
+        arguments in a poor way. I swapped to a while loop, considering
+        there is a teeny bit of logic around what arg you are printing,
+        but you can do the same with slices and a for loop, which is
+        what is done in the blog.</p>
+        <p>Personally I prefer the while loop, because you avoid having
+        the second payload capture:</p>
+        <div class="sourceCode" id="cb1"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="at">var</span> i<span class="op">:</span> <span class="dt">u32</span> <span class="op">=</span> <span class="dv">1</span>;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span>(i <span class="op">&lt;</span> args<span class="op">.</span>len) <span class="op">:</span> (i <span class="op">+=</span> <span class="dv">1</span>) {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (i <span class="op">&gt;</span> <span class="dv">1</span>) <span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot; &quot;</span><span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot;{s}&quot;</span><span class="op">,</span> <span class="op">.</span>{args[i]});</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (args[<span class="dv">1</span><span class="op">..</span>]<span class="op">,</span> <span class="dv">1</span><span class="op">..</span>) <span class="op">|</span>arg<span class="op">,</span> j<span class="op">|</span> {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(j <span class="op">&gt;</span> <span class="dv">1</span>) <span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot; &quot;</span><span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot;{s}&quot;</span><span class="op">,</span> <span class="op">.</span>{arg});</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{});</span></code></pre></div>
+        <p>Ultimately though, my first super-lame attempt still worked.
+        A large part of the point of these exercises is to realise that
+        some of the most useful tools are really simple to implement.
+        Everything is just bytes is sort of the motto of the eblog
+        systems programming series.</p>
+        <h2 id="cat">cat</h2>
+        <p>Apparently I forgot to write cat, so it’s a good thing I
+        checked!. TODO</p>
+        <h2 id="binpatch">binpatch</h2>
+        <p>Again an easy one, I went back and used a writer. Nothing
+        super interesting here except zig’s sort of cool slices:</p>
+        <div class="sourceCode" id="cb2"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot;{s}&quot;</span><span class="op">,</span> <span class="op">.</span>{file[<span class="dv">0</span><span class="op">..</span>offset]});</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot;{s}&quot;</span><span class="op">,</span> <span class="op">.</span>{replacement});</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> w<span class="op">.</span>print(<span class="st">&quot;{s}&quot;</span><span class="op">,</span> <span class="op">.</span>{file[(offset <span class="op">+</span> replacement<span class="op">.</span>len)<span class="op">..</span>]});</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> w<span class="op">.</span>flush();</span></code></pre></div>
+        <p>Looking at my program, vs the example go program, my one is a
+        lot shorter. I think the example does some more interesting
+        stuff with <code>io.Copy</code> and error handling, whereas mine
+        just prints. Probably the <code>print("{s}", .{bytes})"</code>
+        indicates a memory copy or something would be better for me.</p>
+        <h2 id="torso">torso</h2>
+        <p>This was the first sort of big read-y program. Again the
+        example program was a lot longer than what I ended up with. I
+        think the example checks bounds and errors a bit more than my
+        program did. They also used file specific functions, but I just
+        used <code>readFileAlloc</code> and used zig’s slices to get to
+        the offset. I am not totally sure if that’s an uber efficient
+        method for reading in files, but it works and should be easy to
+        change in the future if the file reading or writing is a
+        bottleneck.</p>
+        <p>In this program I handled arguments like so:</p>
+        <div class="sourceCode" id="cb3"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="at">var</span> i<span class="op">:</span> <span class="dt">usize</span> <span class="op">=</span> <span class="dv">1</span>;</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> (i <span class="op">&lt;</span> args<span class="op">.</span>len) <span class="op">:</span> (i <span class="op">+=</span> <span class="dv">1</span>) {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (std<span class="op">.</span>mem<span class="op">.</span>eql(<span class="dt">u8</span><span class="op">,</span> args[i]<span class="op">,</span> <span class="st">&quot;-from&quot;</span>)) {</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        filepath <span class="op">=</span> args[i <span class="op">+</span> <span class="dv">1</span>];</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        i <span class="op">+=</span> <span class="dv">1</span>; <span class="co">// skip the next arg</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (std<span class="op">.</span>mem<span class="op">.</span>eql(<span class="dt">u8</span><span class="op">,</span> args[i]<span class="op">,</span> <span class="st">&quot;-before&quot;</span>)) {</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        bytesbefore <span class="op">=</span> <span class="cf">try</span> std<span class="op">.</span>fmt<span class="op">.</span>parseInt(<span class="dt">u32</span><span class="op">,</span> args[i <span class="op">+</span> <span class="dv">1</span>]<span class="op">,</span> <span class="dv">10</span>);</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        i <span class="op">+=</span> <span class="dv">1</span>; </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (std<span class="op">.</span>mem<span class="op">.</span>eql(<span class="dt">u8</span><span class="op">,</span> args[i]<span class="op">,</span> <span class="st">&quot;-after&quot;</span>)) {</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        bytesafter <span class="op">=</span> <span class="cf">try</span> std<span class="op">.</span>fmt<span class="op">.</span>parseInt(<span class="dt">u32</span><span class="op">,</span> args[i <span class="op">+</span> <span class="dv">1</span>]<span class="op">,</span> <span class="dv">10</span>);</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        i <span class="op">+=</span> <span class="dv">1</span>;</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (std<span class="op">.</span>mem<span class="op">.</span>eql(<span class="dt">u8</span><span class="op">,</span> args[i]<span class="op">,</span> <span class="st">&quot;-offset&quot;</span>)) {</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        offset <span class="op">=</span> <span class="cf">try</span> std<span class="op">.</span>fmt<span class="op">.</span>parseInt(<span class="dt">u32</span><span class="op">,</span> args[i<span class="op">+</span><span class="dv">1</span>]<span class="op">,</span> <span class="dv">10</span>);</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        i <span class="op">+=</span> <span class="dv">1</span>;</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (std<span class="op">.</span>mem<span class="op">.</span>eql(<span class="dt">u8</span><span class="op">,</span> args[i]<span class="op">,</span> <span class="st">&quot;-newline&quot;</span>)) {</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        newline <span class="op">=</span> <span class="cn">true</span>;</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> { <span class="co">// it must be a positional arg</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        std<span class="op">.</span>debug<span class="op">.</span>print(<span class="st">&quot;Found unexpected arg: {s}</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{args[i]});</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        std<span class="op">.</span>debug<span class="op">.</span>print(usage_str<span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span>;</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+        <p>The main thing I don’t like with this strategy is checking
+        the nullness of certain variables, but I suppose somewhere you
+        have to check which/if all the needed args have been
+        provided.</p>
+        <p>Mainly this annoys me with default values, for example it’s
+        nice to allow a user to specify which file to write to, or write
+        straight to stdout, and what I have been doing is something
+        like:</p>
+        <div class="sourceCode" id="cb4"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="at">var</span> out_file<span class="op">:</span> <span class="op">?</span>std<span class="op">.</span>Io<span class="op">.</span>File <span class="op">=</span> <span class="cn">null</span>;</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (std<span class="op">.</span>mem<span class="op">.</span>eql(<span class="dt">u8</span><span class="op">,</span> args[i]<span class="op">,</span> <span class="st">&quot;-file&quot;</span>)) {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        filepath <span class="op">=</span> args[i <span class="op">+</span> <span class="dv">1</span>];</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        i <span class="op">+=</span> <span class="dv">1</span>; <span class="co">// skip the next arg</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (file <span class="op">==</span> <span class="cn">null</span>) {</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>            file <span class="op">=</span> <span class="cf">try</span> std<span class="op">.</span>Io<span class="op">.</span>Dir<span class="op">.</span>cwd()<span class="op">.</span>openFile(init<span class="op">.</span>io<span class="op">,</span> args[i<span class="op">+</span><span class="dv">1</span>]<span class="op">,</span> <span class="op">.</span>{});</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>            std<span class="op">.</span>log<span class="op">.</span>err(<span class="st">&quot;Couldnt open file: {s}</span><span class="sc">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="op">.</span>{args[i<span class="op">+</span><span class="dv">1</span>]});</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="dv">1</span>;</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">// set default here</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (file <span class="op">==</span> <span class="cn">null</span>) {</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    file <span class="op">=</span> std<span class="op">.</span>Io<span class="op">.</span>File<span class="op">.</span>stdout();</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+        <p>In hindsight its probably better to store the filepath, and
+        depending on if thats set or not handle opening the file
+        elsewhere:</p>
+        <div class="sourceCode" id="cb5"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="at">var</span> filepath<span class="op">:</span> <span class="op">?</span>[]<span class="at">const</span> <span class="dt">u8</span> <span class="op">=</span> <span class="cn">null</span>;</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (std<span class="op">.</span>mem<span class="op">.</span>eql(<span class="dt">u8</span><span class="op">,</span> args[i]<span class="op">,</span> <span class="st">&quot;-file&quot;</span>)) {</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        filepath <span class="op">=</span> args[i <span class="op">+</span> <span class="dv">1</span>];</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        i <span class="op">+=</span> <span class="dv">1</span>; <span class="co">// skip the next arg</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> out_file <span class="op">=</span> <span class="cf">if</span>(filepath <span class="op">==</span> <span class="cn">null</span>) std<span class="op">.</span>Io<span class="op">.</span>File<span class="op">.</span>stdout() </span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                 <span class="cf">else</span> <span class="cf">try</span> std<span class="op">.</span>Io<span class="op">.</span>Dir<span class="op">.</span>cwd()<span class="op">.</span>openFile(init<span class="op">.</span>io<span class="op">,</span> filepath<span class="op">.?,</span> <span class="op">.</span>{});</span></code></pre></div>
+        <p>Now that I have written that out I think it makes more sense
+        to separate the user provided filepath from resource
+        initialisation / defaults. Part of the benefit of writing out
+        this process is making reflections like these, I am glad I
+        caught this.</p>
+        <h2 id="hexdump">hexdump</h2>
+        <p>Writing hexdump was fun. I enjoyed coming up with a nice(ish)
+        argument handling style using a while loop, learned about some
+        zig std library functions mostly to do with printing, and got to
+        compare it against an existing tool (hexdump. I think if I spent
+        a bit more time on it I would be able to make the code a bit
+        simpler, make the printing logic a bit clearer, maybe handle
+        some errors instead of <code>try</code>ing everything, but I am
+        pretty satisfied.</p>
+        <p>I realised after I first got the program working that I had
+        been using bad way to write bytes out. Essentially, I was using
+        a convenience function <code>writeStreamingAll</code> to write
+        my program output. The <code>writeStreamingAll</code> function
+        is stated in the docs to be equivalent to creating a writer,
+        writing some bytes, and then flushing. Ignoring the large fact I
+        was using this function poorly, it was a bad choice anyway
+        because:</p>
         <ul>
-        <li>Copy zig mains into code blocks</li>
-        <li>Decide how much gonna copy over</li>
-        <li>Zigisms? IO passing? which version?</li>
+        <li>Probably writing a lot of stuff (entire file contents)</li>
+        <li>Logic around bytes to be printed</li>
+        <li>Had to separately create a formatted string</li>
         </ul>
+        <p>This is probably a good function to use if you just want to
+        dump some bytes out. Also, I probably could have done all my
+        logic to a buffer, keeping track of the buffer offset and using
+        <code>std.fmt.bufPrint</code> or something. But as far as I
+        understand thats sort of what the <code>Writer</code>
+        abstraction is for.</p>
+        <p>There’s a quick example below, you can see without any loops
+        how it’s tedious to keep track of the buffer offset
+        manually:</p>
+        <div class="sourceCode" id="cb6"><pre
+        class="sourceCode zig"><code class="sourceCode zig"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="at">const</span> std <span class="op">=</span> <span class="bu">@import</span>(<span class="st">&quot;std&quot;</span>);</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main(init<span class="op">:</span> std<span class="op">.</span>process<span class="op">.</span>Init) <span class="op">!</span><span class="dt">void</span> {</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> arena<span class="op">:</span> std<span class="op">.</span>mem<span class="op">.</span>Allocator <span class="op">=</span> init<span class="op">.</span>arena<span class="op">.</span>allocator();</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> out <span class="op">=</span> std<span class="op">.</span>Io<span class="op">.</span>File<span class="op">.</span>stdout();</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> fmt_str <span class="op">=</span> <span class="st">&quot;Some hex: {X:0&gt;2}</span><span class="sc">\n</span><span class="st">&quot;</span>;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Writing directly to the file</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> out<span class="op">.</span>writeStreamingAll(init<span class="op">.</span>io<span class="op">,</span> <span class="st">&quot;Hello, world!</span><span class="sc">\n</span><span class="st">&quot;</span>);</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// How I was using writeStreamingAll:</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> sbuf <span class="op">=</span> <span class="cf">try</span> arena<span class="op">.</span>alloc(<span class="dt">u8</span><span class="op">,</span> <span class="dv">4096</span>);</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> fmt_str_len <span class="op">=</span> <span class="dv">13</span>;</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    _ <span class="op">=</span> <span class="cf">try</span> std<span class="op">.</span>fmt<span class="op">.</span>bufPrint(sbuf<span class="op">,</span> fmt_str<span class="op">,</span> <span class="op">.</span>{<span class="dv">0</span><span class="er">xFF</span>});</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> out<span class="op">.</span>writeStreamingAll(init<span class="op">.</span>io<span class="op">,</span> sbuf[<span class="dv">0</span><span class="op">..</span>fmt_str_len]);</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Using a writer instead</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> wbuf <span class="op">=</span> <span class="cf">try</span> arena<span class="op">.</span>alloc(<span class="dt">u8</span><span class="op">,</span> <span class="dv">4096</span>);</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">var</span> writer <span class="op">=</span> out<span class="op">.</span>writer(init<span class="op">.</span>io<span class="op">,</span> wbuf);</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">const</span> interface <span class="op">=</span> <span class="op">&amp;</span>writer<span class="op">.</span>interface;</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> interface<span class="op">.</span>print(fmt_str<span class="op">,</span> <span class="op">.</span>{<span class="dv">0</span><span class="er">xFF</span>});</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> interface<span class="op">.</span>flush();</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+        <p>It was really fun starting backwards (by accident)
+        essentially printing and flushing every character, to using the
+        actual std library api. Unexpectedly this little project made me
+        respect the writer abstraction a bit more.</p>
+        <p>Another thing I realised I was probably doing wrong was
+        calling <code>std.process.exit</code> in some parts of my code.
+        I noticed I was using it to replicate returning an error code,
+        and it would probably be a bit tidier to just return a
+        <code>u8</code> from main, and return either <code>0</code> or
+        <code>1</code> in the code. Maybe with a more serious program
+        using <code>std.process.exit</code> makes sense, but for
+        <code>shexdump</code> I thought this made things a bit nicer to
+        read.</p>
+        <p>A quick aside on the zig writer abstraction:</p>
+        <p>There are many well written articles about zig’s writer
+        abstraction, but here are my thoughts. It was interesting to me
+        to use a writer you have to do something like:
+        <code>&amp;xyz.writer(&amp;buf).interface</code>. I had a super
+        quick skim and it’s sort of how zig can do an abstracted
+        interface. You can create your own data structure and offer a
+        <code>Writer</code> interface into it by connecting your writing
+        functions to the interface. I thought it was interesting to see
+        that the <code>std.Io.Writer</code> struct had a
+        <code>vtable</code> member. I suppose this is a bit of a zigism
+        that I have not fully gotten used to yet.</p>
+        <h2 id="unhexdump">unhexdump</h2>
+        <p>I also haven’t gotten around to unhexdump yet I think it will
+        be pretty quick though, just have to figure out a reverse format
+        string, and jam them into a writer. TODO</p>
     </body>
 </html>
