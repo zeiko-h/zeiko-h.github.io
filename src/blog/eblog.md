@@ -52,8 +52,35 @@ Everything is just bytes is sort of the motto of the eblog systems programming s
 
 ## cat
 
-Apparently I forgot to write cat, so it's a good thing I checked!.
-TODO
+Using a writer and looping through the arguments made this a short and easy program.
+Defintely the shortest program of the lot.
+I stretched out with initialising the writer, maybe it was unneeded.
+
+Here's the entire source because its so small:
+``` zig
+const std = @import("std");
+const Io = std.Io;
+
+pub fn main(init: std.process.Init) !u8 {
+    const arena: std.mem.Allocator = init.arena.allocator();
+
+    // Writer
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_file_writer: Io.File.Writer = .init(.stdout(), init.io, &stdout_buffer);
+    const w = &stdout_file_writer.interface;
+    const args = try init.minimal.args.toSlice(arena);
+
+    for (args, 0..) |arg, i| {
+        if (i > 0) {
+            const filepath = arg;
+            const file = try std.Io.Dir.cwd().readFileAlloc(init.io, filepath, arena, .unlimited);
+            try w.print("{s}", .{file});
+        }
+    }
+    try w.flush(); // Don't forget to flush!
+    return 0;
+}
+```
 
 ## binpatch
 
@@ -208,6 +235,58 @@ I suppose this is a bit of a zigism that I have not fully gotten used to yet.
 
 ## unhexdump
 
-I also haven't gotten around to unhexdump yet
-I think it will be pretty quick though, just have to figure out a reverse format string, and jam them into a writer.
-TODO
+Unhexdump was one I thought would be super simple, but was actually more difficult than I expected.
+This program reads either via stdin or a specified file and converts back from hex, using the previously made tools
+I converted my hello world program to hex, and converted it back, `chmod +x`'ed it and voila, `all your codebase are belong to us`.
+
+I wound up with this (not super clean, but wanted to finish this):
+``` zig
+var read_buf: [4096]u8 = undefined;
+var reader = out_file.reader(init.io, &read_buf);
+const r = &reader.interface; // Access the generic reader abstraction functions
+var bytes = try r.takeDelimiter('\n');
+while(bytes != null) : (bytes = try r.takeDelimiter('\n')){
+    var it = std.mem.splitAny(u8, bytes.?, "\n\t "); // Split bytes into several slices
+    var contents = it.next();
+    // I haven't seen many zig iterators, I hope this is how it's used
+    while(contents != null ) : (contents = it.next()) {
+        if (contents.?.len > 0) {
+         const converted = try std.fmt.parseInt(u8, contents.?, 16); // convert from hex to byte 
+         try w.print("{c}", .{converted}); // write byte
+        }
+    }
+}
+try w.flush();
+```
+
+The difficulty in writing this program was trying to figure out what functions to use in the zig std library `Reader`.
+There were a few functions which stood out:
+
+- `takeDelimiter` or `takeXYZ`
+- `readAlloc` or `readSliceAll`
+
+I picked these because they seemed to update the seek position, which was part of why I was using a reader, and they sounded vaguely read-y.
+
+I ended up using `takeDelimiter` but this concerned me a little bit about cross platform line endings.
+I probably could write some code to handle that case, and I suppose that's what zig expects you to do.
+
+The other functions, `readAlloc`, seemed to allocate memory for the read. 
+In contrast to the `takeXYZ` style functions, the read style functions require a length argument.
+This is the main reason I didn't use these, because I didn't feel like writing code to handle incremental reading.
+I would suppose that this is the more robust way to use the reader, but the high-ish level of takeDelimiter was suited to my purpose.
+
+Alternatively I also could have just read the whole file into memory.
+I haven't read much on this, but I think this is considered a bad idea, probably because it's memory intensive.
+I'm glad I used a reader here, and thought about zig's readers a bit, in the future I would probably reach straight for `takeDelimiter` for reading lines, and `readAlloc` if I felt like being more robust.
+
+## Conclusion 
+
+That was a surprisingly fun exercise, I recommend giving it a go.
+I think it's an alright way to learn a new language, it was good to use the std library, but nothing was complex enough to require much abstraction.
+If I were giving advice to someone interested in this, I would say quickly read on `Reader`s and `Writer`s, it will probably make your project a bit cleaner.
+My favourite project was probably the simple hex reader, the most complex of what I wrote but the most fun, I also spent the most time on cleaning it up.
+I think I could have improved my programs by doing better error handling, I got a bit lazy towards the end and started relying on `try` a bit much.
+I also think I could have been more memory concious, I don't think it matters too much for these tools which are short lived, but as an exercise for writing larger programs probably a good habit.
+
+Hopefully in the future I will continue the eblog series, until then, godspeed.
+

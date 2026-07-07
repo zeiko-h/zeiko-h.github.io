@@ -1,9 +1,9 @@
 ## 2026
+- [Following eblog.fly](eblog.html)
 - [Flashing a corne keyboard with qmk](qmk.html)
 - [Writing | My first post](first_post.html)
 
 ## WIP
-- [Following eblog.fly](eblog.html)
 - [Entity component system](entity_component_system.html)
 
 ## Backburner
